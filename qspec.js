@@ -31,7 +31,21 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 				provideContextExecuted = false,
 				beforeAllExecuted = false;
 
-		var executeBeforeAllFunction = function() {
+		var executeProvideContextFunctions = function() {
+			if (provideContextExecuted) {
+					return;
+			}
+
+			setTimeout(function() {
+				forEach(provideContextFunctions, function() {
+					this.call(workspace, modifiers);
+				});
+
+				provideContextExecuted = true;
+			}, 0)
+		};
+
+		var executeBeforeAllFunctions = function() {
 			if (beforeAllExecuted) {
 				return;
 			}
@@ -43,17 +57,15 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 			beforeAllExecuted = true;
 		};
 
-		var executeBeforeEachFunction = function() {
+		var executeBeforeEachFunctions = function() {
 			forEach(beforeEachFunctions, function() {
 				this.call(workspace, modifiers);
 			});
 		};
 
-		conditions.push(new Condition(workspace, 'should provide context', function() {}, executeBeforeAllFunction, executeBeforeEachFunction));
-
 		var environment = {
 			should: function(conditionName, conditionFunction) {
-				conditions.push(new Condition(workspace, conditionName, conditionFunction, executeBeforeAllFunction, executeBeforeEachFunction));
+				conditions.push(new Condition(workspace, conditionName, conditionFunction, executeBeforeAllFunctions, executeBeforeEachFunctions));
 			}
 		};
 
@@ -75,27 +87,21 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 		contextFunction.call(workspace, environment);
 
 		return {
-			defineModule: function() {
-				externalDefineModule(subjectName + ', when ' + contextName, {
-					setup: function() {
-						if (provideContextExecuted) {
-							return;
-						}
-
-						forEach(provideContextFunctions, function() {
-							this.call(workspace, modifiers);
-						});
-
-						provideContextExecuted = true;
-					}
-				});
-			},
+			modifiers: modifiers,
 			defineTests: function() {
 				forEach(conditions, function() {
 					this.defineTest();
 				});
 			},
-			modifiers: modifiers
+			defineModule: function() {
+				externalDefineModule(subjectName + ', when ' + contextName, {
+					setup: function() {
+						executeProvideContextFunctions();
+					}
+				});
+
+				this.defineTests();
+			}
 		};
 	};
 
@@ -112,7 +118,6 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 			}
 		};
 
-
 		subjectFunction.call(workspace, environment);
 		
 		return {
@@ -120,20 +125,13 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 				forEach(contexts, function() {
 					this.defineModule();
 				});
-			},
-			defineTests: function() {
-				forEach(contexts, function() {
-					this.defineTests();
-				});
 			}
 		};
 	};
 
-
 	return function(subjectName, subjectFunction) {
 		var subject = new Subject(subjectName, subjectFunction);
 		subject.defineModules();
-		subject.defineTests();
 	};
 })(forEach, module, asyncTest, start);
 
