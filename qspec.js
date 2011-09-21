@@ -17,7 +17,7 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 						executeBeforeEach();
 						conditionFunction.call(workspace);
 						externalStartTest();
-					}, 500);
+					}, 0);
 				});
 			}
 		};
@@ -25,28 +25,26 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 
 	var Context = function(workspace, subjectName, contextName, contextFunction) {
 		var conditions = [],
-				provideContextFunctions = [],
+				setupFunctions = [],
 				beforeAllFunctions = [],
 				beforeEachFunctions = [],
-				provideContextExecuted = false,
-				beforeAllExecuted = false;
+				setupFunctionsExecuted = false,
+				beforeAllFunctionsExecuted = false;
 
-		var executeProvideContextFunctions = function() {
-			if (provideContextExecuted) {
+		var executeSetupFunctions = function() {
+			if (setupFunctionsExecuted) {
 					return;
 			}
 
-			setTimeout(function() {
-				forEach(provideContextFunctions, function() {
-					this.call(workspace, modifiers);
-				});
+			forEach(setupFunctions, function() {
+				this.call(workspace, modifiers);
+			});
 
-				provideContextExecuted = true;
-			}, 0)
+			setupFunctionsExecuted = true;
 		};
 
 		var executeBeforeAllFunctions = function() {
-			if (beforeAllExecuted) {
+			if (beforeAllFunctionsExecuted) {
 				return;
 			}
 
@@ -54,7 +52,7 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 				this.call(workspace, modifiers);
 			});
 
-			beforeAllExecuted = true;
+			beforeAllFunctionsExecuted = true;
 		};
 
 		var executeBeforeEachFunctions = function() {
@@ -70,8 +68,8 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 		};
 
 		var modifiers = {
-			provideContext: function(provideContextFunction) {
-				provideContextFunctions.push(provideContextFunction);
+			setup: function(setupFunction) {
+				setupFunctions.push(setupFunction);
 				return this;
 			},
 			beforeAll: function(beforeAllFunction) {
@@ -96,7 +94,7 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 			defineModule: function() {
 				externalDefineModule(subjectName + ', when ' + contextName, {
 					setup: function() {
-						executeProvideContextFunctions();
+						executeSetupFunctions();
 					}
 				});
 
