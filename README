@@ -1,0 +1,49 @@
+Note, qUnit must be loaded for qSpec to work.
+
+
+--------------------------------------------------------------------------------
+Example:
+--------------------------------------------------------------------------------
+
+subject('iPod', function(phone) {
+  phone.when('playing', function(it) {
+    it.should('should display the track name', function() {
+      ok(this.currentTrackName, this.expectedTrackName);
+    });
+  });
+}).provideContext(function(context) {
+  // All methods set 'this' equal to the subject's workspace
+  this.helperFunction = function() {
+    console.log('I helped!');
+  };
+
+  // You can also call provideContext, beforeEach, and beforeAll here or
+  // at the end of any of these methods.  You can call these multiple
+  // times, they are added to a queue.
+  //   provideContext: is executed when before each test is executed
+  //                   but allows for other processing to occur afterward
+  //                   such as DOM updates (similar to qUnit's setup
+  //                   inside a module
+  //
+  //   beforeAll:      is executed once before the all tests run but after
+  //                   any module setup happens, instanced to the subject
+  //
+  //   beforEach:      is executed before each test is executed, and after
+  //                   the module setup happens.
+
+  context.provideContext(function(context) {
+    // ...
+  }).beforeAll(function(context) {
+    // ...
+  }).beforeEach(function(context) {
+    // ...
+  });
+
+  this.doSomethingSpecial();
+}).provideContext(function(context) {
+  // ...
+}).beforeAll(function(context) {
+  // ...
+}).beforeEach(function(context) {
+  // ...
+});
