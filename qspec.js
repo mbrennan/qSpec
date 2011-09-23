@@ -12,12 +12,9 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 		return {
 			defineTest: function() {
 				externalDefineAsyncTest('should ' + conditionName, function() {
-					setTimeout(function() {
-						executeBeforeAll();
-						executeBeforeEach();
-						conditionFunction.call(workspace);
-						externalStartTest();
-					}, 0);
+					executeBeforeAll();
+					executeBeforeEach();
+					conditionFunction.call(workspace);
 				});
 			}
 		};
@@ -28,19 +25,12 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 				setupFunctions = [],
 				beforeAllFunctions = [],
 				beforeEachFunctions = [],
-				setupFunctionsExecuted = false,
 				beforeAllFunctionsExecuted = false;
 
 		var executeSetupFunctions = function() {
-			if (setupFunctionsExecuted) {
-					return;
-			}
-
 			forEach(setupFunctions, function() {
 				this.call(workspace, modifiers);
 			});
-
-			setupFunctionsExecuted = true;
 		};
 
 		var executeBeforeAllFunctions = function() {
