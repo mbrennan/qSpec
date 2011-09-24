@@ -7,25 +7,40 @@ var forEach = function(items, itemFunction) {
 	}
 };
 
-subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, externalStartTest) {
-	var Condition = function(workspace, conditionName, conditionFunction, executeBeforeAll, executeBeforeEach) {
+subject = (function(forEach) {
+	var Condition = function(workspace, conditionName, conditionFunction) {
+		var testTimeout = 5000;
+		var expectAssertions;
+
+		var modifiers = {
+			expect: function(numberOfAssertions) {
+				expectAssertions = numberOfAssertions;
+				return this;
+			},
+			timeout: function(newTimeout) {
+				testTimeout = newTimeout;
+				return this;
+			}
+		};
+
 		return {
 			defineTest: function() {
-				externalDefineAsyncTest('should ' + conditionName, function() {
-					executeBeforeAll();
-					executeBeforeEach();
+				test('should ' + conditionName, function() {
+					stop(testTimeout);
+					if (expectAssertions) {
+						expect(expectAssertions);
+					}
+
 					conditionFunction.call(workspace);
 				});
-			}
+			},
+			modifiers: modifiers
 		};
 	};
 
 	var Context = function(workspace, subjectName, contextName, contextFunction) {
 		var conditions = [],
-				setupFunctions = [],
-				beforeAllFunctions = [],
-				beforeEachFunctions = [],
-				beforeAllFunctionsExecuted = false;
+				setupFunctions = [];
 
 		var executeSetupFunctions = function() {
 			forEach(setupFunctions, function() {
@@ -33,41 +48,25 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 			});
 		};
 
-		var executeBeforeAllFunctions = function() {
-			if (beforeAllFunctionsExecuted) {
-				return;
-			}
-
-			forEach(beforeAllFunctions, function() {
-				this.call(workspace, modifiers);
-			});
-
-			beforeAllFunctionsExecuted = true;
-		};
-
-		var executeBeforeEachFunctions = function() {
-			forEach(beforeEachFunctions, function() {
-				this.call(workspace, modifiers);
-			});
-		};
-
 		var environment = {
 			should: function(conditionName, conditionFunction) {
-				conditions.push(new Condition(workspace, conditionName, conditionFunction, executeBeforeAllFunctions, executeBeforeEachFunctions));
+				var condition = new Condition(workspace, conditionName, conditionFunction);
+				conditions.push(condition);
+
+				return condition.modifiers;
 			}
 		};
 
 		var modifiers = {
-			setup: function(setupFunction) {
+			setup: function(setupDetails) {
+				var setupFunction;
+				if (typeof setupDetails !== 'function') {
+					setupFunction = setupDetails.setup;
+				} else {
+					setupFunction = setupDetails;
+				}
+
 				setupFunctions.push(setupFunction);
-				return this;
-			},
-			beforeAll: function(beforeAllFunction) {
-				beforeAllFunctions.push(beforeAllFunction);
-				return this;
-			},
-			beforeEach: function(beforeEachFunction) {
-				beforeEachFunctions.push(beforeEachFunction);
 				return this;
 			}
 		};
@@ -82,7 +81,7 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 				});
 			},
 			defineModule: function() {
-				externalDefineModule(subjectName + ', when ' + contextName, {
+				module(subjectName + ', when ' + contextName, {
 					setup: function() {
 						executeSetupFunctions();
 					}
@@ -121,5 +120,5 @@ subject = (function(forEach, externalDefineModule, externalDefineAsyncTest, exte
 		var subject = new Subject(subjectName, subjectFunction);
 		subject.defineModules();
 	};
-})(forEach, module, asyncTest, start);
+})(jQuery ? $.each : forEach);
 
